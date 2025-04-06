@@ -1,4 +1,5 @@
 import curses 
+from curses import wrapper
 
 class Snake:
     """
@@ -24,4 +25,11 @@ class Game:
     """
     pass
 
-stdscr = curses.initscr()
+def main(stdscr):
+    stdscr.clear()
+    stdscr.addstr(10, 20, "hello snake")
+    
+    # stdscr.refresh()
+    stdscr.getch()
+
+wrapper(main)
