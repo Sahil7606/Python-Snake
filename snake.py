@@ -2,7 +2,7 @@ import time
 import curses 
 from curses import wrapper
 
-# Tomorrow: implement initializeGame()
+# Tomorrow: get the snake to move
 
 class Snake:
     """
@@ -44,9 +44,9 @@ class Game:
         self.height = height
         self.width = width
         self.walls = None
-        self.Snake = None
+        self.snake = None
 
-    def renderBoard(self, stdscr):  # Do I really need this?
+    def renderWalls(self, stdscr):  # Do I really need this?
         # Top boundary
         stdscr.addstr(0, 0, '+' + ('-' * (self.width - 2)) + '+')
         
@@ -67,11 +67,16 @@ class Game:
                 for j in range(self.width):
                     self.walls.add((i, j))
             else:
-                self.walls.add(i, 0)
-                self.walls.add(i, self.width - 1)
+                self.walls.add((i, 0))
+                self.walls.add((i, self.width - 1))
 
-    def initializeGame(self):
-        pass
+    def initializeGame(self, stdscr):
+        self.renderWalls(stdscr)
+        self.createWalls()
+
+        self.snake = Snake(self.height // 2, 5)
+        stdscr.addstr(self.snake.head_position[0], self.snake.head_position[1], 'X')
+        stdscr.addstr(self.snake.head_position[0], self.snake.head_position[1] - 1, 'O')
 
     def startGame(self):
         pass
@@ -79,9 +84,8 @@ class Game:
 def main(stdscr):
     curses.curs_set(0)  # Hide cursor
     stdscr.clear()
-    stdscr.addstr(0, 0, "Welcome to Snake!")
-    game = Game(20, 50)  # Wider board (20 columns) for safety
-    game.renderBoard(stdscr)
+    game = Game(21, 50)  # Wider board (20 columns) for safety
+    game.initializeGame(stdscr)
     stdscr.refresh()
     stdscr.getch()  # Wait for keypress
 
