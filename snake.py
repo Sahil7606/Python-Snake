@@ -186,8 +186,6 @@ class Game:
             stdscr.clear()
             self.__renderGame(stdscr)
             
-            self.__getInput(stdscr)
-
             if self.snake.head.position == self.__currentApple.position:
                 self.snake.grow()
                 self.__createApple()
@@ -200,6 +198,8 @@ class Game:
                 time.sleep(self.snake.speed * 2)
             else:
                 time.sleep(self.snake.speed)
+
+            self.__getInput(stdscr)
 
         stdscr.nodelay(False)
         stdscr.getch()
