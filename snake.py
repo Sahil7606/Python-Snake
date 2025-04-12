@@ -5,65 +5,135 @@ from curses import wrapper
 
 # Tomorrow: Improve documentation and add pre and endgame screen
 class Snake_Node:
+    """
+    Basic linked list node implementation specialized for the body of the snake
+
+    Attributes:
+        position (tuple): the position of the body segment
+        next (Snake_Node|None): a pointer to the next part of the snake
+    """
     def __init__(self, position: tuple, next = None):
         self.position = position
         self.next = next
 
 class Snake:
     """
+    Controls the behavior of the snake using a queue-like structure based off of a singly linked list.
+
+    This class manages movement, direction, and growth of the snake during gameplay.
+
     Attributes:
-        head_position (tuple)
-        length (int)
-        speed (float)
-        direction (str)
+        Public:
+            head (Snake_Node): The node at the front of the snake
+            tail (Snake_Node): The node at the end of the snake
+            direction (tuple): The direction of the snake in the form of (row_delta, col_delta)
+                ex) (0, 1) -> Right, (-1, 0) -> Up
+            length (int): The length of the snake            
+            speed (float): The time to wait in between each frame; lower value = higher speed, vice versa
+            nextPos (tuple|None): The next position of the head of the snake (if applicable)
+
+        Private:
+            growPending (bool): Tracks if the snake has eaten an apple, and subsequently needs to grow
     """
     def __init__(self, row, col):
+        # Creates a new node at the specified position
         self.head = Snake_Node((row, col))
         self.tail = self.head
+
+        # Starts direction going right
         self.direction = (0, 1)
+
         self.length = 1
         self.speed = 0.1
-        self.next_pos = None
+        self.nextPos = None
 
         self.__growPending = False
 
-    def __contains__(self, position):
+    def __contains__(self, position: tuple) -> bool:
+        """
+        Utilizes Python's "in" operator to see if a particular position is in the snake
+
+        Args:
+            position (tuple): the position to check for in the form (row, col)
+
+        Returns:
+            (bool): True if the specified position is in the snake, False if not
+        """
+        # Sets current to tail
         current = self.tail
+
+        # Iterates through each node while checking if their positions are equal to the given position
         while current:
             if position == current.position:
                 return True
+            
             current = current.next
+
         return False
     
-    def __enqueueHead(self, position: tuple):
+    def __enqueueHead(self, position: tuple) -> None:
+        """
+        Appends a new node to the front of the snake, then sets the head equal to the new front node
+
+        Args:
+            position (tuple): The position of the node to append
+        """
+        # Creates new head and appends to the front of the head
         new_node = Snake_Node(position)
         self.head.next = new_node
+
+        # Sets the head to the new node (the front)
         self.head = self.head.next
 
+        # Increments the length attribule of the snake
         self.length += 1
 
-    def __dequeueTail(self):
-        removed_item = self.tail
+    def __dequeueTail(self) -> None:
+        """
+        Removes the tail node then sets the tail equal to the node in front of it
+        """
         self.tail = self.tail.next
-        removed_item = None
 
+        # Decrements the length attribute
         self.length -= 1
 
-    def setDirection(self, direction: tuple):
-        self.direction = direction
-        # Stops vertical movement from appearing faster
+    def setDirection(self, direction: tuple) -> None:
+        """
+        Sets the new direction of the snake
+
+        Args:
+            direction (tuple): the new direction of the snake
+        """
+
+        # Prevents the snake from moving 180 degrees in a single turn
+        if (direction[0] == -self.direction[0] and direction[1] == -self.direction[1]):
+            return
+        
+        # Stops vertical movement from appearing faster since characters are taller than they are wide
         if direction == (-1, 0) or direction == (1, 0):
             self.speed = 0.2
         else:
             self.speed = 0.1
 
-    def grow(self):
+        self.direction = direction
+
+    def grow(self) -> None:
+        """
+        Called when the snake eats an apple, sets growPending to true
+        """
         self.__growPending = True
 
-    def move(self):
-        self.next_pos = (self.head.position[0] + self.direction[0], self.head.position[1] + self.direction[1])
-        self.__enqueueHead(self.next_pos)
+    def move(self) -> None:
+        """
+        Moves the snake by adding a node to the front and removing one from the back
+        """
+        # Calculates the next head position based on direction
+        self.nextPos = (self.head.position[0] + self.direction[0], self.head.position[1] + self.direction[1])
+
+        # Appends a new head to the snake at the next position
+        self.__enqueueHead(self.nextPos)
         
+        # If the snake has eaten an apple then doesn't remove tail node, otherwise it is removed
         if self.__growPending:
             self.__growPending = False
         else:
@@ -72,7 +142,7 @@ class Snake:
 class Apple: 
     """
     Attributes:
-        postition (tuple)
+        postition (tuple): The position of the apple
     """
     def __init__(self, position: tuple):
         self.position = position
@@ -194,7 +264,7 @@ class Game:
             self.snake.move()
             
             stdscr.refresh()
-            if self.snake.next_pos in self.walls:
+            if self.snake.nextPos in self.walls:
                 time.sleep(self.snake.speed * 2)
             else:
                 time.sleep(self.snake.speed)
