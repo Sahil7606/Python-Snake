@@ -150,33 +150,46 @@ class Apple:
 class Game:
     """
     Attributes:
-        height (int)
-        width (int)
-        walls (set|None)
-        snake (Snake|None)
+        Private:
+            height (int): The height(number of rows) of the board
+            width (int): The width(number of columns) of the board
+            walls (set[tuple]|None): A set containing the position of each wall in the form (row, col)
+            snake (Snake|None): The snake object used for the game
+            currentApple (Apple|None): The apple object that is currently on the board
     """
     def __init__(self, height, width):
-        self.height = height
-        self.width = width
+        self.__height = height
+        self.__width = width
         self.__walls = None
         self.__snake = None
         self.__currentApple = None
 
-    def __renderWalls(self, stdscr):
-        # Top boundary
-        stdscr.addstr(0, 0, '+' + ('-' * (self.width - 2)) + '+')
-        
-        # Bottom boundary
-        stdscr.addstr(self.height - 1, 0, '+' + ('-' * (self.width - 2)) + '+')
-        
-        # Side boundaries
-        for i in range(1, self.height - 1):
-            stdscr.addstr(i, 0, '|')
-            stdscr.addstr(i, self.width - 1, '|')
-        
-        stdscr.refresh()
 
-    def __renderSnake(self, stdscr):
+    def __renderWalls(self, stdscr) -> None:
+        """
+        Prints the walls to the screen
+
+        Args:
+            stdscr: The screen that the walls appear on
+        """
+        # Prints top boundary
+        stdscr.addstr(0, 0, '+' + ('-' * (self.__width - 2)) + '+')
+        
+        # Prints bottom boundary
+        stdscr.addstr(self.__height - 1, 0, '+' + ('-' * (self.__width - 2)) + '+')
+        
+        # Prints side boundaries
+        for i in range(1, self.__height - 1):
+            stdscr.addstr(i, 0, '|')
+            stdscr.addstr(i, self.__width - 1, '|')
+
+    def __renderSnake(self, stdscr) -> None:
+        """
+        Prints the snake to the screen
+
+        Args:
+            stdscr: The screen that the snake appears on
+        """
         # Draw snake
         current = self.snake.tail
         while current and current.next:
@@ -184,34 +197,65 @@ class Game:
             current = current.next
         stdscr.addstr(current.position[0], current.position[1], 'X')
 
-    def __renderApple(self, stdscr):
+    def __renderApple(self, stdscr) -> None:
+        """
+        Prints the current apple to the screen
+
+        Args:
+            stdscr: The screen that the apple appears on
+        """
         stdscr.addstr(self.__currentApple.position[0], self.__currentApple.position[1], '*')
 
-    def __renderGame(self, stdscr):
+    def __renderGame(self, stdscr) -> None:
+        """
+        Calls the previous rendering functions to render the game to the screen
+
+        Args:
+            stdscr: The screen that the game is played on
+        """
         self.__renderWalls(stdscr)
         self.__renderSnake(stdscr)
         self.__renderApple(stdscr)
 
-    def __initializeWalls(self):
+        stdscr.refresh()
+
+    def __initializeWalls(self) -> None:
+        """
+        Uses the defined height and width attributes to add all wall coordinates to self.walls
+        """
+        # Initializes the set
         self.walls = set()
-        for i in range(self.height):
-            if i == 0 or i == self.height - 1:
-                for j in range(self.width):
+
+        for i in range(self.__height):
+            # If i is at the top or bottom add the top and botton boundaries to the set
+            if i == 0 or i == self.__height - 1:
+                for j in range(self.__width):
                     self.walls.add((i, j))
+            # Adds the side boundaries to the set
             else:
                 self.walls.add((i, 0))
-                self.walls.add((i, self.width - 1))
+                self.walls.add((i, self.__width - 1))
         
-    def __createApple(self, row = None, col = None):
-        self.__currentApple = None
-        position = None
+    def __createApple(self, row = None, col = None) -> None:
+        """
+        Creates a new apple object for the snake to eat
+
+        Args:
+            row (int|None): the row where the apple is going to be
+            col (int|None): the column where the apple is going to be
+        """
+        position = ()
+        # If the row and column are specified set those as the position
         if row and col:
             position = (row, col)
+        # Generates a random position for the apple within the walls
         else:
-            position = (random.randint(1, self.height - 2), random.randint(1, self.width - 2))
+            position = (random.randint(1, self.__height - 2), random.randint(1, self.__width - 2))
+            # Makes sure the apple isnt placed in the snake
             while position in self.snake:
-                position = (random.randint(1, self.height - 2), random.randint(1, self.width - 2))
+                position = (random.randint(1, self.__height - 2), random.randint(1, self.__width - 2))
 
+        # Initializes an Apple object at that position
         self.__currentApple = Apple(position)
 
     def __getInput(self, stdscr):
@@ -241,13 +285,11 @@ class Game:
         curses.curs_set(0)
         stdscr.clear()
 
-        self.snake = Snake(self.height // 2, 5)
-        self.__createApple((self.height // 2), self.width - 7)
+        self.snake = Snake(self.__height // 2, 5)
+        self.__createApple((self.__height // 2), self.__width - 7)
         self.__initializeWalls()
         
         self.__renderGame(stdscr)
-
-        stdscr.refresh()
 
     def startGame(self, stdscr):
         stdscr.nodelay(True)
@@ -255,6 +297,8 @@ class Game:
             # Clear the previous frame
             stdscr.clear()
             self.__renderGame(stdscr)
+
+            self.__getInput(stdscr)
             
             if self.snake.head.position == self.__currentApple.position:
                 self.snake.grow()
@@ -268,8 +312,6 @@ class Game:
                 time.sleep(self.snake.speed * 2)
             else:
                 time.sleep(self.snake.speed)
-
-            self.__getInput(stdscr)
 
         stdscr.nodelay(False)
         stdscr.getch()
