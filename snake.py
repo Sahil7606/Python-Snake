@@ -35,7 +35,7 @@ class Snake:
         Private:
             growPending (bool): Tracks if the snake has eaten an apple, and subsequently needs to grow
     """
-    def __init__(self, row, col):
+    def __init__(self, row, col, speed = 0.1):
         # Creates a new node at the specified position
         self.head = Snake_Node((row, col))
         self.tail = self.head
@@ -44,7 +44,7 @@ class Snake:
         self.direction = (0, 1)
 
         self.length = 1
-        self.speed = 0.1
+        self.speed = speed
         self.nextPos = None
 
         self.__growPending = False
@@ -164,7 +164,6 @@ class Game:
         self.__snake = None
         self.__currentApple = None
 
-
     def __renderWalls(self, stdscr) -> None:
         """
         Prints the walls to the screen
@@ -191,7 +190,7 @@ class Game:
             stdscr: The screen that the snake appears on
         """
         # Draw snake
-        current = self.snake.tail
+        current = self.__snake.tail
         while current and current.next:
             stdscr.addstr(current.position[0], current.position[1], 'O') 
             current = current.next
@@ -205,6 +204,29 @@ class Game:
             stdscr: The screen that the apple appears on
         """
         stdscr.addstr(self.__currentApple.position[0], self.__currentApple.position[1], '*')
+
+    def __renderStartScr(self, stdscr) -> None:
+        """
+        Renders the start screen and displays a difficulty prompt
+
+        Args:
+            stdscr: The screen that the game is played on
+        """
+        # Render walls
+        self.__renderWalls(stdscr)
+
+        # Start screen content
+        title = "🐍 Welcome to Snake 🐍"
+        subtitle = "Choose your difficulty:"
+        options = "[1] Easy   [2] Medium   [3] Hard"
+        note = "Press 1, 2, or 3 to begin, or ESC to exit"
+
+        # Centered print
+        stdscr.addstr(self.__height // 2 - 2, (self.__width - len(title)) // 2, title)
+        stdscr.addstr(self.__height // 2,     (self.__width - len(subtitle)) // 2, subtitle)
+        stdscr.addstr(self.__height // 2 + 1, (self.__width - len(options)) // 2, options)
+        stdscr.addstr(self.__height // 2 + 3, (self.__width - len(note)) // 2, note)
+        stdscr.refresh()
 
     def __renderGame(self, stdscr) -> None:
         """
@@ -221,20 +243,20 @@ class Game:
 
     def __initializeWalls(self) -> None:
         """
-        Uses the defined height and width attributes to add all wall coordinates to self.walls
+        Uses the defined height and width attributes to add all wall coordinates to self.__walls
         """
         # Initializes the set
-        self.walls = set()
+        self.__walls = set()
 
         for i in range(self.__height):
             # If i is at the top or bottom add the top and botton boundaries to the set
             if i == 0 or i == self.__height - 1:
                 for j in range(self.__width):
-                    self.walls.add((i, j))
+                    self.__walls.add((i, j))
             # Adds the side boundaries to the set
             else:
-                self.walls.add((i, 0))
-                self.walls.add((i, self.__width - 1))
+                self.__walls.add((i, 0))
+                self.__walls.add((i, self.__width - 1))
         
     def __createApple(self, row = None, col = None) -> None:
         """
@@ -252,7 +274,7 @@ class Game:
         else:
             position = (random.randint(1, self.__height - 2), random.randint(1, self.__width - 2))
             # Makes sure the apple isnt placed in the snake
-            while position in self.snake:
+            while position in self.__snake:
                 position = (random.randint(1, self.__height - 2), random.randint(1, self.__width - 2))
 
         # Initializes an Apple object at that position
@@ -267,13 +289,13 @@ class Game:
         """
         key = stdscr.getch()
         if key == curses.KEY_DOWN:
-            self.snake.setDirection((1, 0))
+            self.__snake.setDirection((1, 0))
         elif key == curses.KEY_UP:
-            self.snake.setDirection((-1, 0))
+            self.__snake.setDirection((-1, 0))
         elif key == curses.KEY_LEFT:
-            self.snake.setDirection((0, -1))
+            self.__snake.setDirection((0, -1))
         elif key == curses.KEY_RIGHT:
-            self.snake.setDirection((0, 1))
+            self.__snake.setDirection((0, 1))
 
     def __checkGameOver(self) -> bool:
         """
@@ -283,29 +305,43 @@ class Game:
             bool: True if the snake has collided with itself or the wall, False if not
         """
         # Checks for collisions with snake
-        current = self.snake.tail
+        current = self.__snake.tail
         while current and current.next:
-            if current.position == self.snake.head.position:
+            if current.position == self.__snake.head.position:
                 return True
             current = current.next
 
         # Checks for collisions with wall
-        return self.snake.head.position in self.walls
-        
-    def initializeGame(self, stdscr) -> None:
+        return self.__snake.head.position in self.__walls
+    
+    def startMenu(self, stdscr) -> float:
+        self.__renderStartScr(stdscr)
+        difficulty_speeds = {ord('1'): 0.2, ord('2'): 0.1, ord('3'): 0.07}
+
+        key = stdscr.getch()
+        while key not in difficulty_speeds and key != 27:
+            key = stdscr.getch()
+
+        if key == 27:
+            return -1
+
+        return difficulty_speeds[key]        
+
+    def initializeGame(self, stdscr, speed: float = 0.1) -> None:
         """
         Initializes the game window and instantiates necessary objects
 
         Args:
             stdscr: The screen that the game is played on
+            speed (float): The speed of the snake based on the player's difficulty selection in the start menu
         """
         # Hides cursor and clears screen
         curses.curs_set(0)
         stdscr.clear()
 
         # Creates necessary objects
-        self.snake = Snake(self.__height // 2, 5)
-        self.__createApple((self.__height // 2), self.__width - 7)
+        self.__snake = Snake(self.__height // 2, 10, speed)
+        self.__createApple((self.__height // 2), self.__width - 15)
         self.__initializeWalls()
         
         # Renders game to the screen
@@ -331,21 +367,21 @@ class Game:
             self.__getInput(stdscr)
             
             # Snake grows if it eats the current apple
-            if self.snake.head.position == self.__currentApple.position:
-                self.snake.grow()
+            if self.__snake.head.position == self.__currentApple.position:
+                self.__snake.grow()
                 self.__createApple()
             
             # Moves the snake
-            self.snake.move()
+            self.__snake.move()
             
             # Refreshes the screen
             stdscr.refresh()
 
             # Slows time when player is about to collide for fairness
-            if self.snake.nextPos in self.walls:
-                time.sleep(self.snake.speed * 2)
+            if self.__snake.nextPos in self.__walls:
+                time.sleep(self.__snake.speed * 2)
             else:
-                time.sleep(self.snake.speed)
+                time.sleep(self.__snake.speed)
 
         # Waits for input and then exits
         stdscr.nodelay(False)
@@ -353,16 +389,14 @@ class Game:
 
 def main(stdscr):
     game = Game(21, 50)
-    game.initializeGame(stdscr)
+    snakeSpeed = game.startMenu(stdscr)
 
-    # Gets user input to start game
-    key = stdscr.getch()
-    while key != 10 and key != 27:
-        key = stdscr.getch()
-
-    if key == 27:
+    if snakeSpeed == -1:
         return
-    
+
+    game.initializeGame(stdscr, snakeSpeed)
     game.startGame(stdscr)
 
 wrapper(main)
+
+  
