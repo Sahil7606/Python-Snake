@@ -1,4 +1,3 @@
-import time
 import random
 import curses 
 from curses import wrapper
@@ -35,7 +34,7 @@ class Snake:
         Private:
             growPending (bool): Tracks if the snake has eaten an apple, and subsequently needs to grow
     """
-    def __init__(self, row, col, speed = 0.1):
+    def __init__(self, row, col, speed = 100):
         # Creates a new node at the specified position
         self.head = Snake_Node((row, col))
         self.tail = self.head
@@ -111,9 +110,9 @@ class Snake:
         
         # Stops vertical movement from appearing faster since characters are taller than they are wide
         if direction == (-1, 0) or direction == (1, 0):
-            self.speed = 0.2
+            self.speed = int(self.speed * 1.5)
         else:
-            self.speed = 0.1
+            self.speed = int(self.speed / 1.5)
 
         self.direction = direction
 
@@ -156,64 +155,56 @@ class Game:
             walls (set[tuple]|None): A set containing the position of each wall in the form (row, col)
             snake (Snake|None): The snake object used for the game
             currentApple (Apple|None): The apple object that is currently on the board
+            stdscr: The curses screen object used for display
     """
-    def __init__(self, height, width):
+    def __init__(self, height, width, stdscr):
         self.__height = height
         self.__width = width
         self.__walls = None
         self.__snake = None
         self.__currentApple = None
+        self.stdscr = stdscr
 
-    def __renderWalls(self, stdscr) -> None:
+    def __renderWalls(self) -> None:
         """
         Prints the walls to the screen
-
-        Args:
-            stdscr: The screen that the walls appear on
         """
         # Prints top boundary
-        stdscr.addstr(0, 0, '+' + ('-' * (self.__width - 2)) + '+')
+        self.stdscr.addstr(0, 0, '+' + ('-' * (self.__width - 2)) + '+')
         
         # Prints bottom boundary
-        stdscr.addstr(self.__height - 1, 0, '+' + ('-' * (self.__width - 2)) + '+')
+        self.stdscr.addstr(self.__height - 1, 0, '+' + ('-' * (self.__width - 2)) + '+')
         
         # Prints side boundaries
         for i in range(1, self.__height - 1):
-            stdscr.addstr(i, 0, '|')
-            stdscr.addstr(i, self.__width - 1, '|')
+            self.stdscr.addstr(i, 0, '|')
+            self.stdscr.addstr(i, self.__width - 1, '|')
 
-    def __renderSnake(self, stdscr) -> None:
+    def __renderSnake(self) -> None:
         """
         Prints the snake to the screen
-
-        Args:
-            stdscr: The screen that the snake appears on
         """
         # Draw snake
         current = self.__snake.tail
         while current and current.next:
-            stdscr.addstr(current.position[0], current.position[1], 'O') 
+            self.stdscr.addstr(current.position[0], current.position[1], 'O') 
             current = current.next
-        stdscr.addstr(current.position[0], current.position[1], 'X')
+        self.stdscr.addstr(current.position[0], current.position[1], 'X')
 
-    def __renderApple(self, stdscr) -> None:
+    def __renderApple(self) -> None:
         """
         Prints the current apple to the screen
-
-        Args:
-            stdscr: The screen that the apple appears on
         """
-        stdscr.addstr(self.__currentApple.position[0], self.__currentApple.position[1], '*')
+        self.stdscr.addstr(self.__currentApple.position[0], self.__currentApple.position[1], '*')
 
-    def __renderStartScr(self, stdscr) -> None:
+    def __renderStartScr(self) -> None:
         """
         Renders the start screen and displays a difficulty prompt
-
-        Args:
-            stdscr: The screen that the game is played on
         """
+        self.stdscr.clear()
+
         # Render walls
-        self.__renderWalls(stdscr)
+        self.__renderWalls()
 
         # Start screen content
         title = "🐍 Welcome to Snake 🐍"
@@ -222,24 +213,36 @@ class Game:
         note = "Press 1, 2, or 3 to begin, or ESC to exit"
 
         # Centered print
-        stdscr.addstr(self.__height // 2 - 2, (self.__width - len(title)) // 2, title)
-        stdscr.addstr(self.__height // 2,     (self.__width - len(subtitle)) // 2, subtitle)
-        stdscr.addstr(self.__height // 2 + 1, (self.__width - len(options)) // 2, options)
-        stdscr.addstr(self.__height // 2 + 3, (self.__width - len(note)) // 2, note)
-        stdscr.refresh()
+        self.stdscr.addstr(self.__height // 2 - 2, (self.__width - len(title)) // 2, title)
+        self.stdscr.addstr(self.__height // 2,     (self.__width - len(subtitle)) // 2, subtitle)
+        self.stdscr.addstr(self.__height // 2 + 1, (self.__width - len(options)) // 2, options)
+        self.stdscr.addstr(self.__height // 2 + 3, (self.__width - len(note)) // 2, note)
+        self.stdscr.refresh()
 
-    def __renderGame(self, stdscr) -> None:
+    def __renderEndScr(self) -> None:
+        """
+        Renders the game over screen
+        """
+        self.stdscr.clear()
+        self.__renderWalls()
+
+        heading = "Game Over"
+        score = f"Your score was {self.__snake.length}"
+        note = "Press Enter to play again, or ESC to exit"
+
+        self.stdscr.addstr(self.__height // 2, (self.__width - len(heading)) // 2, heading)
+        self.stdscr.addstr(self.__height // 2 + 1, (self.__width - len(score)) // 2, score)
+        self.stdscr.addstr(self.__height // 2 + 3, (self.__width - len(note)) // 2, note)
+
+    def __renderGame(self) -> None:
         """
         Calls the previous rendering functions to render the game to the screen
-
-        Args:
-            stdscr: The screen that the game is played on
         """
-        self.__renderWalls(stdscr)
-        self.__renderSnake(stdscr)
-        self.__renderApple(stdscr)
+        self.__renderWalls()
+        self.__renderSnake()
+        self.__renderApple()
 
-        stdscr.refresh()
+        self.stdscr.refresh()
 
     def __initializeWalls(self) -> None:
         """
@@ -280,14 +283,11 @@ class Game:
         # Initializes an Apple object at that position
         self.__currentApple = Apple(position)
 
-    def __getInput(self, stdscr) -> None:
+    def __getInput(self) -> None:
         """
         Handles player input and switches the snake's direction accordingly
-
-        Args:
-            stdscr: The screen to collect input from
         """
-        key = stdscr.getch()
+        key = self.stdscr.getch()
         if key == curses.KEY_DOWN:
             self.__snake.setDirection((1, 0))
         elif key == curses.KEY_UP:
@@ -314,30 +314,50 @@ class Game:
         # Checks for collisions with wall
         return self.__snake.head.position in self.__walls
     
-    def startMenu(self, stdscr) -> float:
-        self.__renderStartScr(stdscr)
-        difficulty_speeds = {ord('1'): 0.2, ord('2'): 0.1, ord('3'): 0.07}
+    def startMenu(self) -> float:
+        """
+        Handles logic for the start menu of the game
 
-        key = stdscr.getch()
+        Returns:
+            float: The speed of the snake based on the selected difficulty, or -1 to escape
+        """
+        self.__renderStartScr()
+        difficulty_speeds = {ord('1'): 200, ord('2'): 100, ord('3'): 70}
+
+        key = self.stdscr.getch()
         while key not in difficulty_speeds and key != 27:
-            key = stdscr.getch()
+            key = self.stdscr.getch()
 
         if key == 27:
             return -1
 
-        return difficulty_speeds[key]        
+        return difficulty_speeds[key]   
 
-    def initializeGame(self, stdscr, speed: float = 0.1) -> None:
+    def endMenu(self) -> bool:
+        """
+        Controls logic for the 'Game Over' screen
+
+        Returns:
+            bool: True if the user wants to play again, False if not
+        """
+        self.__renderEndScr()
+
+        key = self.stdscr.getch() 
+        while key != 27 and key != 10:
+            key = self.stdscr.getch()
+
+        return key == 10
+
+    def initializeGame(self, speed: int = 100) -> None:
         """
         Initializes the game window and instantiates necessary objects
 
         Args:
-            stdscr: The screen that the game is played on
             speed (float): The speed of the snake based on the player's difficulty selection in the start menu
         """
         # Hides cursor and clears screen
         curses.curs_set(0)
-        stdscr.clear()
+        self.stdscr.clear()
 
         # Creates necessary objects
         self.__snake = Snake(self.__height // 2, 10, speed)
@@ -345,26 +365,24 @@ class Game:
         self.__initializeWalls()
         
         # Renders game to the screen
-        self.__renderGame(stdscr)
+        self.__renderGame()
 
-    def startGame(self, stdscr) -> None:
+    def startGame(self) -> None:
         """
         Starts the game loop and runs until the game is over
-
-        Args:
-            stdscr: The screen that the game is played on
         """
         # Stops getInput() from halting the program waiting for input
-        stdscr.nodelay(True)
+        self.stdscr.nodelay(True)
+        self.stdscr.timeout(self.__snake.speed)
 
         # Core game loop
         while not self.__checkGameOver():
             # Clear the previous frame
-            stdscr.clear()
-            self.__renderGame(stdscr)
+            self.stdscr.clear()
+            self.__renderGame()
 
             # Get user input
-            self.__getInput(stdscr)
+            self.__getInput()
             
             # Snake grows if it eats the current apple
             if self.__snake.head.position == self.__currentApple.position:
@@ -375,28 +393,25 @@ class Game:
             self.__snake.move()
             
             # Refreshes the screen
-            stdscr.refresh()
-
-            # Slows time when player is about to collide for fairness
-            if self.__snake.nextPos in self.__walls:
-                time.sleep(self.__snake.speed * 2)
-            else:
-                time.sleep(self.__snake.speed)
+            self.stdscr.refresh()
 
         # Waits for input and then exits
-        stdscr.nodelay(False)
-        stdscr.getch()
+        self.stdscr.nodelay(False)
 
 def main(stdscr):
-    game = Game(21, 50)
-    snakeSpeed = game.startMenu(stdscr)
+    game = Game(21, 50, stdscr)
 
-    if snakeSpeed == -1:
-        return
+    while True:
+        speed = game.startMenu()
+        if speed == -1:
+            break
 
-    game.initializeGame(stdscr, snakeSpeed)
-    game.startGame(stdscr)
+        game.initializeGame(speed)
+        game.startGame()
+
+        
+        if not game.endMenu():
+            break
 
 wrapper(main)
 
-  
