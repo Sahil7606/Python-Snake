@@ -258,8 +258,13 @@ class Game:
         # Initializes an Apple object at that position
         self.__currentApple = Apple(position)
 
-    def __getInput(self, stdscr):
-        # Handle input
+    def __getInput(self, stdscr) -> None:
+        """
+        Handles player input and switches the snake's direction accordingly
+
+        Args:
+            stdscr: The screen to collect input from
+        """
         key = stdscr.getch()
         if key == curses.KEY_DOWN:
             self.snake.setDirection((1, 0))
@@ -270,49 +275,79 @@ class Game:
         elif key == curses.KEY_RIGHT:
             self.snake.setDirection((0, 1))
 
-    def __checkGameOver(self):
-        # Checks for collisions with body
+    def __checkGameOver(self) -> bool:
+        """
+        Checks if the game is over by checking for collision
+
+        Returns:
+            bool: True if the snake has collided with itself or the wall, False if not
+        """
+        # Checks for collisions with snake
         current = self.snake.tail
         while current and current.next:
             if current.position == self.snake.head.position:
                 return True
             current = current.next
 
+        # Checks for collisions with wall
         return self.snake.head.position in self.walls
         
-    def initializeGame(self, stdscr):
+    def initializeGame(self, stdscr) -> None:
+        """
+        Initializes the game window and instantiates necessary objects
+
+        Args:
+            stdscr: The screen that the game is played on
+        """
         # Hides cursor and clears screen
         curses.curs_set(0)
         stdscr.clear()
 
+        # Creates necessary objects
         self.snake = Snake(self.__height // 2, 5)
         self.__createApple((self.__height // 2), self.__width - 7)
         self.__initializeWalls()
         
+        # Renders game to the screen
         self.__renderGame(stdscr)
 
-    def startGame(self, stdscr):
+    def startGame(self, stdscr) -> None:
+        """
+        Starts the game loop and runs until the game is over
+
+        Args:
+            stdscr: The screen that the game is played on
+        """
+        # Stops getInput() from halting the program waiting for input
         stdscr.nodelay(True)
+
+        # Core game loop
         while not self.__checkGameOver():
             # Clear the previous frame
             stdscr.clear()
             self.__renderGame(stdscr)
 
+            # Get user input
             self.__getInput(stdscr)
             
+            # Snake grows if it eats the current apple
             if self.snake.head.position == self.__currentApple.position:
                 self.snake.grow()
                 self.__createApple()
             
-            # Move snake
+            # Moves the snake
             self.snake.move()
             
+            # Refreshes the screen
             stdscr.refresh()
+
+            # Slows time when player is about to collide for fairness
             if self.snake.nextPos in self.walls:
                 time.sleep(self.snake.speed * 2)
             else:
                 time.sleep(self.snake.speed)
 
+        # Waits for input and then exits
         stdscr.nodelay(False)
         stdscr.getch()
 
