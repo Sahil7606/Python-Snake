@@ -4,7 +4,7 @@ import curses
 from curses import wrapper
 from datetime import datetime
 
-DO_NOT_TOUCH = False  # Not liable for broken egos or tear induced water damage to pc
+DO_NOT_TOUCH = False # Not liable for broken egos or tear induced water damage to pc
 endgame_messages = [  # Displayed if above bool is set to True
     "That's why she left you with a paragraph and a blocked number.",
     "The wall wasn’t the problem. It was you, like always.",
@@ -119,9 +119,9 @@ class Snake:
         
         # Stops vertical movement from appearing faster since characters are taller than they are wide
         if direction == (-1, 0) or direction == (1, 0):
-            self.speed = int(self.speed * 1.5)
+            self.speed = int(self.speed * 3)
         else:
-            self.speed = int(self.speed / 1.5)
+            self.speed = int(self.speed / 3)
 
         self.direction = direction
 
@@ -265,7 +265,18 @@ class Game:
 
         if DO_NOT_TOUCH:
             roast = random.choice(endgame_messages)
-            self.stdscr.addstr(self.__height - 3, (self.__width - len(roast)) // 2, roast)
+            # Splits if the roast is too long
+            if len(roast) > self.__width - 2:
+                words = roast.split(' ')
+                mid = len(words) // 2
+
+                first_line = ' '.join(words[:mid])
+                second_line = ' '.join(words[mid:])
+
+                self.stdscr.addstr(self.__height - 4, (self.__width - len(first_line)) // 2, first_line)
+                self.stdscr.addstr(self.__height - 3, (self.__width - len(second_line)) // 2, second_line)
+            else:
+                self.stdscr.addstr(self.__height - 3, (self.__width - len(roast)) // 2, roast)
 
     def __renderGame(self) -> None:
         """
