@@ -265,18 +265,7 @@ class Game:
 
         if DO_NOT_TOUCH:
             roast = random.choice(endgame_messages)
-            # Splits if the roast is too long
-            if len(roast) > self.__width - 2:
-                words = roast.split(' ')
-                mid = len(words) // 2
-
-                first_line = ' '.join(words[:mid])
-                second_line = ' '.join(words[mid:])
-
-                self.stdscr.addstr(self.__height - 4, (self.__width - len(first_line)) // 2, first_line)
-                self.stdscr.addstr(self.__height - 3, (self.__width - len(second_line)) // 2, second_line)
-            else:
-                self.stdscr.addstr(self.__height - 3, (self.__width - len(roast)) // 2, roast)
+            self.__wrapAndPrint(roast, self.__height - 4)
 
     def __renderGame(self) -> None:
         """
@@ -410,6 +399,38 @@ class Game:
             for idx, entry in enumerate(scores, start=1):
                 file.write(f"{idx}) {entry['score']} - {entry['date']}\n")
     
+    def __wrapAndPrint(self, text: str, start_y: int) -> None:
+        """
+        Wraps and prints a long string across multiple lines if it exceeds screen width.
+
+        Args:
+            text (str): The string to print.
+            start_y (int): The row to begin printing.
+        """
+        max_width = self.__width - 2  # Leave a margin for safety
+        lines = []
+
+        while text:
+            line = text[:max_width]
+            if len(text) > max_width:
+                # Try to break at the last space if possible
+                split_idx = line.rfind(' ')
+                if split_idx == -1:
+                    split_idx = max_width
+                line = text[:split_idx]
+            else:
+                split_idx = len(text)
+
+            lines.append(line.strip())
+            text = text[split_idx:].lstrip()
+
+        # Print each line
+        for i, line in enumerate(lines):
+            y = start_y + i
+            if y < self.__height:
+                x = (self.__width - len(line)) // 2
+                self.stdscr.addstr(y, x, line)
+
     def startMenu(self) -> float:
         """
         Handles logic for the start menu of the game
@@ -506,7 +527,6 @@ def main(stdscr):
         game.initializeGame(speed)
         game.startGame()
 
-        
         if not game.endMenu():
             break
 
