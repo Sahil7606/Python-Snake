@@ -1,8 +1,17 @@
+import os
 import random
 import curses 
 from curses import wrapper
+from datetime import datetime
 
-# Tomorrow: Improve documentation and add pre and endgame screen
+DO_NOT_TOUCH = False  # Not liable for broken egos or tear induced water damage to pc
+endgame_messages = [  # Displayed if above bool is set to True
+    "That's why she left you with a paragraph and a blocked number.",
+    "The wall wasn’t the problem. It was you, like always.",
+    "Your snake isn't the only thing that's short and disappointing.",
+    "Even your reflection avoids eye contact.",
+]
+
 class Snake_Node:
     """
     Basic linked list node implementation specialized for the body of the snake
@@ -192,10 +201,18 @@ class Game:
         self.stdscr.addstr(current.position[0], current.position[1], 'X')
 
     def __renderApple(self) -> None:
+
         """
         Prints the current apple to the screen
         """
         self.stdscr.addstr(self.__currentApple.position[0], self.__currentApple.position[1], '*')
+
+    def __renderScore(self) -> None:
+        """
+        Renders the current score to the screen
+        """
+        score = f"Score: {self.__snake.length}"
+        self.stdscr.addstr(self.__height, (self.__width - len(score)) // 2, score)
 
     def __renderStartScr(self) -> None:
         """
@@ -207,7 +224,7 @@ class Game:
         self.__renderWalls()
 
         # Start screen content
-        title = "🐍 Welcome to Snake 🐍"
+        title = "-- Welcome to Snake --"
         subtitle = "Choose your difficulty:"
         options = "[1] Easy   [2] Medium   [3] Hard"
         note = "Press 1, 2, or 3 to begin, or ESC to exit"
@@ -219,12 +236,24 @@ class Game:
         self.stdscr.addstr(self.__height // 2 + 3, (self.__width - len(note)) // 2, note)
         self.stdscr.refresh()
 
+    def __renderHighScores(self) -> None:
+        """
+        Renders the high score list to the screen.
+        """
+        scores = self.__readHighScores()
+        self.stdscr.addstr(2, (self.__width - len("-- High Scores --")) // 2, "-- High Scores --")
+        
+        for i, entry in enumerate(scores):
+            line = f"{i + 1}) {entry['score']} - {entry['date']}"
+            self.stdscr.addstr(4 + i, (self.__width - len(line)) // 2, line)
+
     def __renderEndScr(self) -> None:
         """
         Renders the game over screen
         """
         self.stdscr.clear()
         self.__renderWalls()
+        self.__renderHighScores()
 
         heading = "Game Over"
         score = f"Your score was {self.__snake.length}"
@@ -234,6 +263,10 @@ class Game:
         self.stdscr.addstr(self.__height // 2 + 1, (self.__width - len(score)) // 2, score)
         self.stdscr.addstr(self.__height // 2 + 3, (self.__width - len(note)) // 2, note)
 
+        if DO_NOT_TOUCH:
+            roast = random.choice(endgame_messages)
+            self.stdscr.addstr(self.__height - 3, (self.__width - len(roast)) // 2, roast)
+
     def __renderGame(self) -> None:
         """
         Calls the previous rendering functions to render the game to the screen
@@ -241,6 +274,7 @@ class Game:
         self.__renderWalls()
         self.__renderSnake()
         self.__renderApple()
+        self.__renderScore()
 
         self.stdscr.refresh()
 
@@ -313,6 +347,57 @@ class Game:
 
         # Checks for collisions with wall
         return self.__snake.head.position in self.__walls
+    
+    def __readHighScores(self) -> list:
+        """
+        Reads and returns the top 5 high scores from a local file.
+
+        Returns:
+            list: A list of dictionaries in the form {'score': int, 'date': str}.
+        """
+        path = ".snake_data/highscores.txt"
+        # Returns empty list if path doesnt exit
+        if not os.path.exists(path):
+            return []
+
+        # Formats scores from file as dictionaries
+        scores = []
+        with open(path, "r") as file:
+            for line in file:
+                try:
+                    parts = line.strip().split(" - ")
+                    score = int(parts[0].split(") ")[1])
+                    date = parts[1]
+                    scores.append({"score": score, "date": date})
+                except:
+                    continue  # Skips malformed lines
+
+        # Returns list of score dictionaries
+        return scores
+
+    def __writeHighScores(self, new_score: int) -> None:
+        """
+        Writes a new score to the high score file if it qualifies for the top 5.
+
+        Args:
+            new_score (int): The player's final score.
+        """
+        path = ".snake_data"
+        # Creates path if it doesn't exist
+        os.makedirs(path, exist_ok=True)
+
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        scores = self.__readHighScores()
+
+        # Appends and re-sorts scores
+        scores.append({"score": new_score, "date": current_date})
+        scores.sort(key=lambda x: x["score"], reverse=True)
+        scores = scores[:5]  # Keep only top 5
+
+        # Writes updated list to file
+        with open(f"{path}/highscores.txt", "w") as file:
+            for idx, entry in enumerate(scores, start=1):
+                file.write(f"{idx}) {entry['score']} - {entry['date']}\n")
     
     def startMenu(self) -> float:
         """
@@ -397,6 +482,7 @@ class Game:
 
         # Waits for input and then exits
         self.stdscr.nodelay(False)
+        self.__writeHighScores(self.__snake.length)
 
 def main(stdscr):
     game = Game(21, 50, stdscr)

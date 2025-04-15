@@ -1,0 +1,14 @@
+# Byte-compiled / cache files
+__pycache__/
+*.pyc
+
+# Editor files
+*.swp
+*.swo
+
+# Snake game data
+.snake_data/
+
+# OS-specific
+.DS_Store
+Thumbs.db
