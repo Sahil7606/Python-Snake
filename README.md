@@ -59,9 +59,11 @@ If your terminal is too small, the game may crash or display incorrectly.
    ```
 
 2. **Run the game**
+   ```bash 
    python snake.py
+   ```
 
 3. **Play with the arrow keys** and survive as long as possible
-   Press `Enter` to restart, or `ESC` to quit at any menu
+Press `Enter` to restart, or `ESC` to quit at any menu
 
 💡 Optional: Set `DO_NOT_TOUCH = True` in `snake.py` if you're emotionally stable enough to handle roast mode.
