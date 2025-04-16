@@ -55,7 +55,7 @@ If your terminal is too small, the game may crash or display incorrectly.
 1. **Clone the repository**  
    ```bash
    git clone https://github.com/yourusername/Python-Snake.git
-   cd snake-game
+   cd Python-Snake
    ```
 
 2. **Run the game**
