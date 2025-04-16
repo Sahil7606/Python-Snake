@@ -56,6 +56,7 @@ If your terminal is too small, the game may crash or display incorrectly.
    ```bash
    git clone https://github.com/yourusername/Python-Snake.git
    cd snake-game
+   ```
 
 2. **Run the game**
    python snake.py
@@ -64,4 +65,3 @@ If your terminal is too small, the game may crash or display incorrectly.
    Press `Enter` to restart, or `ESC` to quit at any menu
 
 💡 Optional: Set `DO_NOT_TOUCH = True` in `snake.py` if you're emotionally stable enough to handle roast mode.
-```
