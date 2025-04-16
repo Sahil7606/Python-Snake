@@ -41,7 +41,7 @@ If your terminal is too small, the game may crash or display incorrectly.
 
 - 🐍 Python 3.6+
 - ✅ `curses` library  
-  *(Usually pre-installed on Linux/macOS; on Windows, install via `pip install windows-curses`*
+  *(Usually pre-installed on Linux/macOS; on Windows, install using `pip install windows-curses`)*
 
 ## 📂 File Structure
 
