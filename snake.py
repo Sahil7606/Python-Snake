@@ -38,7 +38,6 @@ class Snake:
                 ex) (0, 1) -> Right, (-1, 0) -> Up
             length (int): The length of the snake            
             speed (float): The time to wait in between each frame; lower value = higher speed, vice versa
-            nextPos (tuple|None): The next position of the head of the snake (if applicable)
 
         Private:
             growPending (bool): Tracks if the snake has eaten an apple, and subsequently needs to grow
@@ -53,7 +52,6 @@ class Snake:
 
         self.length = 1
         self.speed = speed
-        self.nextPos = None
 
         self.__growPending = False
 
@@ -114,14 +112,17 @@ class Snake:
         """
 
         # Prevents the snake from moving 180 degrees in a single turn
-        if (direction[0] == -self.direction[0] and direction[1] == -self.direction[1]):
+        if direction[0] == -self.direction[0] and direction[1] == -self.direction[1]:
             return
+        
+        if direction == self.direction:
+            return 
         
         # Stops vertical movement from appearing faster since characters are taller than they are wide
         if direction == (-1, 0) or direction == (1, 0):
-            self.speed = int(self.speed * 3)
+            self.speed *= 2
         else:
-            self.speed = int(self.speed / 3)
+            self.speed //= 2
 
         self.direction = direction
 
@@ -136,10 +137,10 @@ class Snake:
         Moves the snake by adding a node to the front and removing one from the back
         """
         # Calculates the next head position based on direction
-        self.nextPos = (self.head.position[0] + self.direction[0], self.head.position[1] + self.direction[1])
+        nextPos = (self.head.position[0] + self.direction[0], self.head.position[1] + self.direction[1])
 
         # Appends a new head to the snake at the next position
-        self.__enqueueHead(self.nextPos)
+        self.__enqueueHead(nextPos)
         
         # If the snake has eaten an apple then doesn't remove tail node, otherwise it is removed
         if self.__growPending:
@@ -490,10 +491,12 @@ class Game:
         """
         # Stops getInput() from halting the program waiting for input
         self.stdscr.nodelay(True)
-        self.stdscr.timeout(self.__snake.speed)
 
         # Core game loop
         while not self.__checkGameOver():
+            # Updates every frame to account for faster vertical movement
+            self.stdscr.timeout(self.__snake.speed)
+
             # Clear the previous frame
             self.stdscr.clear()
             self.__renderGame()
